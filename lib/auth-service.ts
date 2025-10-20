@@ -23,10 +23,12 @@ export const authService = {
     );
 
     // Handle wrapped response from backend
-    // Backend may return: { data: { user: {...} } } or { user: {...} } or just {...}
-    const user =
-      response.data?.user || response.user || response.data || response;
-    return user as User;
+    // Backend may return: { user: {...} } or { data: {...} }
+    const user = response.user || response.data;
+    if (!user) {
+      throw new Error("Invalid response format: missing user data");
+    }
+    return user;
   },
 
   /**
@@ -39,11 +41,14 @@ export const authService = {
     );
 
     // Handle wrapped response from backend
-    const user =
-      response.data?.user || response.user || response.data || response;
+    // Backend may return: { user: {...} } or { data: {...} }
+    const user = response.user || response.data;
+    if (!user) {
+      throw new Error("Invalid response format: missing user data");
+    }
 
     // Cookies are set automatically by the backend
-    return { user: user as User };
+    return { user };
   },
 
   /**
@@ -56,11 +61,14 @@ export const authService = {
     );
 
     // Handle wrapped response from backend
-    const user =
-      response.data?.user || response.user || response.data || response;
+    // Backend may return: { user: {...} } or { data: {...} }
+    const user = response.user || response.data;
+    if (!user) {
+      throw new Error("Invalid response format: missing user data");
+    }
 
     // Cookies are set automatically by the backend
-    return { user: user as User };
+    return { user };
   },
 
   /**
