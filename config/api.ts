@@ -22,7 +22,7 @@ export const API_CONFIG = {
     }
 
     // In production/deployment, use environment-based URL
-    return `http://${this.environment}-api.cruxproject.io`;
+    return `https://${this.environment}-api.cruxproject.io`;
   },
   endpoints: {
     login: "/login",
