@@ -1,13 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import AddClimbModal from "@/components/add-climb-modal";
+import AuthenticatedLayout from "@/components/authenticated-layout";
 import { useAuth } from "@/contexts/auth-context";
+import { useClimbs } from "@/hooks/use-climbs";
 
 export default function DashboardPage() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
+  const [isAddClimbModalOpen, setIsAddClimbModalOpen] = useState(false);
+
+  const userId = user?.id ? Number.parseInt(user.id, 10) : undefined;
+  const {
+    climbs,
+    isLoading: isLoadingClimbs,
+    error: climbsError,
+    createClimb,
+  } = useClimbs(userId);
 
   useEffect(() => {
     // Redirect to signin if not authenticated
@@ -16,16 +27,39 @@ export default function DashboardPage() {
     }
   }, [user, isLoading, router]);
 
-  const handleLogout = async () => {
-    await logout();
-    router.push("/");
+  // Calculate stats from climbs
+  const stats = useMemo(() => {
+    const totalClimbs = climbs.length;
+    const completedClimbs = climbs.filter((c) => c.completed).length;
+
+    // Find hardest grade (for now just show the first completed climb's grade)
+    const hardestGrade = climbs.find((c) => c.completed)?.grade || "Not yet";
+
+    // Calculate active days (unique dates)
+    const uniqueDates = new Set(
+      climbs.map((c) => new Date(c.climb_date).toDateString()),
+    );
+    const activeDays = uniqueDates.size;
+
+    return {
+      totalClimbs,
+      completedClimbs,
+      hardestGrade,
+      activeDays,
+    };
+  }, [climbs]);
+
+  const handleAddClimb = async (
+    climbData: import("@/types/climb").CreateClimbRequest,
+  ) => {
+    await createClimb(climbData);
   };
 
   // Show loading state while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-secondary-600">Loading...</div>
+        <div className="text-gray-600">Loading...</div>
       </div>
     );
   }
@@ -34,96 +68,46 @@ export default function DashboardPage() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-secondary-600">Redirecting...</div>
+        <div className="text-gray-600">Redirecting...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
-      {/* Navigation */}
-      <nav className="border-b border-secondary-200 bg-white/80 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center">
-              <Link href="/dashboard">
-                <h1 className="text-2xl font-bold text-primary-600">
-                  CruxProject
-                </h1>
-              </Link>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-secondary-700">
-                {user.first_name
-                  ? `${user.first_name} ${user.last_name || ""}`.trim()
-                  : user.username || user.email}
-              </span>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="rounded-lg bg-accent-600 px-4 py-2 text-white hover:bg-accent-700 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <AuthenticatedLayout>
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
 
-      {/* Main Content */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center">
-          <h2 className="text-4xl font-bold text-secondary-900">
-            Welcome to CruxProject!
+        {/* Welcome Section */}
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-8 mb-8">
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Welcome back, {user.first_name || user.username}!
           </h2>
-          <p className="mt-4 text-lg text-secondary-600">
-            Your climbing dashboard is coming soon.
+          <p className="text-blue-100 text-lg">
+            Track your climbing progress, log routes, and achieve your goals.
           </p>
+        </div>
 
-          {/* User Info Card */}
-          <div className="mt-12 max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
-            <h3 className="text-xl font-semibold text-secondary-900 mb-4">
-              Your Account
-            </h3>
-            <div className="space-y-3 text-left">
-              {(user.first_name || user.last_name) && (
-                <div>
-                  <span className="text-sm text-secondary-600">Name:</span>
-                  <p className="text-secondary-900 font-medium">
-                    {`${user.first_name || ""} ${user.last_name || ""}`.trim()}
-                  </p>
-                </div>
-              )}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
               <div>
-                <span className="text-sm text-secondary-600">Username:</span>
-                <p className="text-secondary-900 font-medium">
-                  {user.username}
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Total Climbs
+                </p>
+                <p className="text-4xl font-bold text-gray-900">
+                  {isLoadingClimbs ? "..." : stats.totalClimbs}
                 </p>
               </div>
-              <div>
-                <span className="text-sm text-secondary-600">Email:</span>
-                <p className="text-secondary-900 font-medium">{user.email}</p>
-              </div>
-              <div>
-                <span className="text-sm text-secondary-600">User ID:</span>
-                <p className="text-secondary-900 font-mono text-sm">
-                  {user.id}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Coming Soon Features */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="h-10 w-10 mx-auto rounded-lg bg-primary-100 flex items-center justify-center mb-4">
+              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-md">
                 <svg
-                  className="h-5 w-5 text-primary-600"
+                  className="h-7 w-7 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                   role="img"
-                  aria-label="Log climbs icon"
+                  aria-label="Total climbs icon"
                 >
                   <path
                     strokeLinecap="round"
@@ -133,60 +117,169 @@ export default function DashboardPage() {
                   />
                 </svg>
               </div>
-              <h4 className="font-semibold text-secondary-900">Log Climbs</h4>
-              <p className="text-sm text-secondary-600 mt-2">Coming Soon</p>
             </div>
+          </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="h-10 w-10 mx-auto rounded-lg bg-accent-100 flex items-center justify-center mb-4">
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Hardest Grade
+                </p>
+                <p className="text-4xl font-bold text-gray-900">
+                  {isLoadingClimbs ? "..." : stats.hardestGrade}
+                </p>
+              </div>
+              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-md">
                 <svg
-                  className="h-5 w-5 text-accent-600"
+                  className="h-7 w-7 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                   role="img"
-                  aria-label="Track progress icon"
+                  aria-label="Hardest grade icon"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
                   />
                 </svg>
               </div>
-              <h4 className="font-semibold text-secondary-900">
-                Track Progress
-              </h4>
-              <p className="text-sm text-secondary-600 mt-2">Coming Soon</p>
             </div>
+          </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="h-10 w-10 mx-auto rounded-lg bg-secondary-200 flex items-center justify-center mb-4">
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Active Days
+                </p>
+                <p className="text-4xl font-bold text-gray-900">
+                  {isLoadingClimbs ? "..." : stats.activeDays}
+                </p>
+              </div>
+              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-md">
                 <svg
-                  className="h-5 w-5 text-secondary-700"
+                  className="h-7 w-7 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                   role="img"
-                  aria-label="Find partners icon"
+                  aria-label="Active days icon"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
               </div>
-              <h4 className="font-semibold text-secondary-900">
-                Find Partners
-              </h4>
-              <p className="text-sm text-secondary-600 mt-2">Coming Soon</p>
             </div>
           </div>
         </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-200">
+          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-gray-900">
+              Recent Activity
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsAddClimbModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              + Add Climb
+            </button>
+          </div>
+          <div className="p-6">
+            {isLoadingClimbs ? (
+              <p className="text-gray-500 text-center py-12">Loading...</p>
+            ) : climbsError ? (
+              <p className="text-red-500 text-center py-12">{climbsError}</p>
+            ) : climbs.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 mb-4">
+                  No climbs logged yet. Start tracking your progress!
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsAddClimbModalOpen(true)}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Log Your First Climb
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {climbs.slice(0, 5).map((climb) => (
+                  <div
+                    key={climb.id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded ${
+                            climb.climb_type === "outdoor"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-blue-100 text-blue-800"
+                          }`}
+                        >
+                          {climb.climb_type}
+                        </span>
+                        <span className="text-lg font-bold text-gray-900">
+                          {climb.grade}
+                        </span>
+                        {climb.completed && (
+                          <span className="text-green-600 text-sm">✓ Sent</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {new Date(climb.climb_date).toLocaleDateString()} •{" "}
+                        {climb.attempts} attempt
+                        {climb.attempts !== 1 ? "s" : ""}
+                        {climb.style && ` • ${climb.style}`}
+                      </p>
+                      {climb.notes && (
+                        <p className="text-sm text-gray-500 mt-1 italic">
+                          {climb.notes}
+                        </p>
+                      )}
+                    </div>
+                    {climb.rating && (
+                      <div className="flex items-center gap-1 ml-4">
+                        {Array.from({ length: climb.rating }).map((_, i) => (
+                          <svg
+                            key={`${climb.id}-star-${i}`}
+                            className="h-4 w-4 text-yellow-400"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                            role="img"
+                            aria-label="Rating star"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* Add Climb Modal */}
+      <AddClimbModal
+        isOpen={isAddClimbModalOpen}
+        onClose={() => setIsAddClimbModalOpen(false)}
+        onSubmit={handleAddClimb}
+      />
+    </AuthenticatedLayout>
   );
 }
