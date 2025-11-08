@@ -18,16 +18,25 @@ class ApiClient {
     config: RequestConfig,
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      ...config.headers,
-    };
+
+    // Check if body is FormData - if so, don't set Content-Type (browser will set it with boundary)
+    const isFormData = config.body instanceof FormData;
+    const headers: Record<string, string> = isFormData
+      ? { ...config.headers }
+      : {
+          "Content-Type": "application/json",
+          ...config.headers,
+        };
 
     try {
       const response = await fetch(url, {
         method: config.method,
         headers,
-        body: config.body ? JSON.stringify(config.body) : undefined,
+        body: isFormData
+          ? (config.body as FormData)
+          : config.body
+            ? JSON.stringify(config.body)
+            : undefined,
         credentials: "include", // Include HTTPOnly cookies in requests
       });
 
@@ -76,6 +85,18 @@ class ApiClient {
   async get<T>(endpoint: string, requiresAuth = false): Promise<T> {
     return this.request<T>(endpoint, {
       method: "GET",
+      requiresAuth,
+    });
+  }
+
+  async put<T>(
+    endpoint: string,
+    body?: unknown,
+    requiresAuth = false,
+  ): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "PUT",
+      body,
       requiresAuth,
     });
   }

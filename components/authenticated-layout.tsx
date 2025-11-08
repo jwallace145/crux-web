@@ -14,8 +14,10 @@ import {
   HomeIcon,
   MapIcon,
   MapPinIcon,
+  UserCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -28,6 +30,7 @@ const navigation = [
   { name: "Training", href: "/training", icon: BoltIcon },
   { name: "Progress", href: "/progress", icon: ChartBarIcon },
   { name: "Gyms & Crags", href: "/locations", icon: MapPinIcon },
+  { name: "Profile", href: "/profile", icon: UserCircleIcon },
 ];
 
 function classNames(...classes: string[]) {
@@ -128,16 +131,35 @@ export default function AuthenticatedLayout({
                     </ul>
                   </li>
                   <li className="-mx-6 mt-auto">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="flex w-full items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-white/5"
-                    >
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-xs font-medium text-gray-400 outline -outline-offset-1 outline-white/10">
-                        {userInitials}
-                      </span>
-                      <span aria-hidden="true">{userDisplayName}</span>
-                    </button>
+                    <div className="flex flex-col border-t border-white/10">
+                      <Link
+                        href="/profile"
+                        className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-white/5"
+                      >
+                        {user?.profile_picture_url ? (
+                          <Image
+                            src={user.profile_picture_url}
+                            alt="Profile"
+                            width={32}
+                            height={32}
+                            className="size-8 shrink-0 rounded-full object-cover outline -outline-offset-1 outline-white/10"
+                            unoptimized
+                          />
+                        ) : (
+                          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-xs font-medium text-gray-400 outline -outline-offset-1 outline-white/10">
+                            {userInitials}
+                          </span>
+                        )}
+                        <span aria-hidden="true">{userDisplayName}</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="px-6 py-3 text-left text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
+                      >
+                        Sign out
+                      </button>
+                    </div>
                   </li>
                 </ul>
               </nav>
@@ -183,16 +205,35 @@ export default function AuthenticatedLayout({
                 </ul>
               </li>
               <li className="-mx-6 mt-auto">
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-white/5"
-                >
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-xs font-medium text-gray-400 outline -outline-offset-1 outline-white/10">
-                    {userInitials}
-                  </span>
-                  <span aria-hidden="true">{userDisplayName}</span>
-                </button>
+                <div className="flex flex-col border-t border-white/10">
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-white/5"
+                  >
+                    {user?.profile_picture_url ? (
+                      <Image
+                        src={user.profile_picture_url}
+                        alt="Profile"
+                        width={32}
+                        height={32}
+                        className="size-8 shrink-0 rounded-full object-cover outline -outline-offset-1 outline-white/10"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-xs font-medium text-gray-400 outline -outline-offset-1 outline-white/10">
+                        {userInitials}
+                      </span>
+                    )}
+                    <span aria-hidden="true">{userDisplayName}</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="px-6 py-3 text-left text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
+                  >
+                    Sign out
+                  </button>
+                </div>
               </li>
             </ul>
           </nav>
@@ -213,12 +254,23 @@ export default function AuthenticatedLayout({
           {navigation.find((item) => item.href === pathname)?.name ||
             "Dashboard"}
         </div>
-        <button type="button" onClick={handleLogout}>
+        <Link href="/profile">
           <span className="sr-only">Your profile</span>
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-xs font-medium text-gray-400 outline -outline-offset-1 outline-white/10">
-            {userInitials}
-          </span>
-        </button>
+          {user?.profile_picture_url ? (
+            <Image
+              src={user.profile_picture_url}
+              alt="Profile"
+              width={32}
+              height={32}
+              className="size-8 shrink-0 rounded-full object-cover outline -outline-offset-1 outline-white/10"
+              unoptimized
+            />
+          ) : (
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-xs font-medium text-gray-400 outline -outline-offset-1 outline-white/10">
+              {userInitials}
+            </span>
+          )}
+        </Link>
       </div>
 
       {/* Main content */}

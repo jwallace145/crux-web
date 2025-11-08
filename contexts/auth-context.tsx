@@ -18,6 +18,7 @@ import type {
   AuthError,
   LoginCredentials,
   RegisterCredentials,
+  UpdateUserRequest,
   User,
 } from "@/types/auth";
 
@@ -28,6 +29,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<User>;
   register: (credentials: RegisterCredentials) => Promise<User>;
   logout: () => Promise<void>;
+  updateUser: (data: UpdateUserRequest) => Promise<User>;
   error: AuthError | null;
   clearError: () => void;
 }
@@ -121,6 +123,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUser = async (data: UpdateUserRequest) => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const updatedUser = await authService.updateUser(data);
+      setUser(updatedUser);
+      setIsLoading(false);
+      return updatedUser;
+    } catch (err) {
+      setIsLoading(false);
+      const authError: AuthError = {
+        message:
+          err && typeof err === "object" && "message" in err
+            ? (err.message as string)
+            : "Failed to update profile",
+        statusCode:
+          err && typeof err === "object" && "statusCode" in err
+            ? (err.statusCode as number)
+            : undefined,
+      };
+      setError(authError);
+      throw authError;
+    }
+  };
+
   const clearError = () => {
     setError(null);
   };
@@ -134,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        updateUser,
         error,
         clearError,
       }}

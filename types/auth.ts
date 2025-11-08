@@ -8,6 +8,7 @@ export interface User {
   username: string;
   first_name?: string;
   last_name?: string;
+  profile_picture_url?: string;
   createdAt?: string;
 }
 
@@ -22,6 +23,14 @@ export interface RegisterCredentials {
   username: string;
   first_name?: string;
   last_name?: string;
+}
+
+export interface UpdateUserRequest {
+  email?: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  profile_picture?: File;
 }
 
 // Login and registration responses when using HTTPOnly cookies
