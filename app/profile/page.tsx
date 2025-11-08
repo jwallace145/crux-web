@@ -139,8 +139,8 @@ export default function ProfilePage() {
               <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
                 <span>
                   Member since{" "}
-                  {user?.created_at
-                    ? new Date(user.created_at).toLocaleDateString()
+                  {user?.createdAt
+                    ? new Date(user.createdAt).toLocaleDateString()
                     : "Unknown"}
                 </span>
               </div>
